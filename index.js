@@ -21,7 +21,7 @@ const emailServices = {
 		},
 		fromName: "ERPerol Team",
 		adminSubject: "📩 New message from ERPerol Contact Form",
-		userSubject: "✅ Thanks for contacting ERPerol",
+		userSubject: "🍊 Thanks for contacting ERPerol",
 	},
 	gmail: {
 		host: process.env.EMAIL_GMAIL_HOST,
