@@ -1,27 +1,53 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import { readFile } from "node:fs/promises"; // ✅ Biome-approved
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const transporter = nodemailer.createTransport({
-	host: process.env.EMAIL_HOST,
-	port: Number.parseInt(process.env.EMAIL_PORT),
-	secure: process.env.EMAIL_SSL === "true",
-	auth: {
-		user: process.env.EMAIL_USER,
-		pass: process.env.EMAIL_PASS,
+const emailServices = {
+	erperol: {
+		host: process.env.EMAIL_ERPEROL_HOST,
+		port: Number.parseInt(process.env.EMAIL_ERPEROL_PORT),
+		secure: process.env.EMAIL_ERPEROL_SSL === "true",
+		auth: {
+			user: process.env.EMAIL_ERPEROL_USER,
+			pass: process.env.EMAIL_ERPEROL_PASS,
+		},
+		fromName: "ERPerol Team",
+		adminSubject: "📩 New message from ERPerol Contact Form",
+		userSubject: "✅ Thanks for contacting ERPerol",
 	},
-});
+	gmail: {
+		host: process.env.EMAIL_GMAIL_HOST,
+		port: Number.parseInt(process.env.EMAIL_GMAIL_PORT),
+		secure: process.env.EMAIL_GMAIL_SSL === "true",
+		auth: {
+			user: process.env.EMAIL_GMAIL_USER,
+			pass: process.env.EMAIL_GMAIL_PASS,
+		},
+		fromName: "Gmail Support",
+		adminSubject: "📬 Message via Gmail Contact",
+		userSubject: "🙌 We've received your message!",
+	},
+};
 
 app.post("/send", async (req, res) => {
-	const { name, email, message } = req.body;
+	const { name, email, message, service } = req.body;
+
+	const config = emailServices[service];
+	if (!config) {
+		return res
+			.status(400)
+			.json({ success: false, error: "Invalid service provider" });
+	}
+
+	const transporter = nodemailer.createTransport(config);
 
 	try {
 		// Load templates
@@ -38,18 +64,18 @@ app.post("/send", async (req, res) => {
 
 		// Send email to admin
 		await transporter.sendMail({
-			from: `"${name}" <${process.env.EMAIL_USER}>`,
-			to: process.env.EMAIL_USER,
+			from: `"${name}" <${config.auth.user}>`,
+			to: config.auth.user,
 			replyTo: email,
-			subject: "New message from contact form",
+			subject: config.adminSubject,
 			html: adminTemplate,
 		});
 
 		// Send auto-reply to user
 		await transporter.sendMail({
-			from: `"ERPerol Team" <${process.env.EMAIL_USER}>`,
+			from: `"${config.fromName}" <${config.auth.user}>`,
 			to: email,
-			subject: "Thanks for contacting ERPerol",
+			subject: config.userSubject,
 			html: userTemplate,
 		});
 
