@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import { readFile } from "node:fs/promises"; // ✅ Biome-approved
-import emailServices from "./config.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,23 +12,30 @@ app.use(express.json());
 
 app.post("/send", async (req, res) => {
 	const {
+		host,
+		port,
+		secure,
+		user,
+		pass,
 		name,
 		email,
 		message,
 		adminName,
 		adminSubject,
 		userSubject,
-		service,
 	} = req.body;
 
-	const config = emailServices[service];
-	if (!config) {
-		return res
-			.status(400)
-			.json({ success: false, error: "Invalid service provider" });
-	}
+	console.log(host, port, secure, user, pass);
 
-	const transporter = nodemailer.createTransport(config);
+	const transporter = nodemailer.createTransport({
+		host: host,
+		port: port,
+		secure: secure,
+		auth: {
+			user: user,
+			pass: pass,
+		},
+	});
 
 	try {
 		// Load templates
@@ -46,8 +52,8 @@ app.post("/send", async (req, res) => {
 
 		// Send email to admin
 		await transporter.sendMail({
-			from: `"${name}" <${config.auth.user}>`,
-			to: config.auth.user,
+			from: `"${name}" <${user}>`,
+			to: user,
 			replyTo: email,
 			subject: adminSubject,
 			html: adminTemplate,
@@ -55,7 +61,7 @@ app.post("/send", async (req, res) => {
 
 		// Send auto-reply to user
 		await transporter.sendMail({
-			from: `"${adminName}" <${config.auth.user}>`,
+			from: `"${adminName}" <${user}>`,
 			to: email,
 			subject: userSubject,
 			html: userTemplate,

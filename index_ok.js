@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
 import { readFile } from "node:fs/promises"; // ✅ Biome-approved
-import emailServices from "./config.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,16 +10,35 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const emailServices = {
+	erperol: {
+		host: process.env.EMAIL_ERPEROL_HOST,
+		port: Number.parseInt(process.env.EMAIL_ERPEROL_PORT),
+		secure: process.env.EMAIL_ERPEROL_SSL === "true",
+		auth: {
+			user: process.env.EMAIL_ERPEROL_USER,
+			pass: process.env.EMAIL_ERPEROL_PASS,
+		},
+		fromName: "ERPerol Team",
+		adminSubject: "📩 New message from ERPerol Contact Form",
+		userSubject: "🙏 Thanks for contacting ERPerol",
+	},
+	gmail: {
+		host: process.env.EMAIL_GMAIL_HOST,
+		port: Number.parseInt(process.env.EMAIL_GMAIL_PORT),
+		secure: process.env.EMAIL_GMAIL_SSL === "true",
+		auth: {
+			user: process.env.EMAIL_GMAIL_USER,
+			pass: process.env.EMAIL_GMAIL_PASS,
+		},
+		fromName: "Gmail Support",
+		adminSubject: "📬 Message via Gmail Contact",
+		userSubject: "🙌 We've received your message!",
+	},
+};
+
 app.post("/send", async (req, res) => {
-	const {
-		name,
-		email,
-		message,
-		adminName,
-		adminSubject,
-		userSubject,
-		service,
-	} = req.body;
+	const { name, email, message, service } = req.body;
 
 	const config = emailServices[service];
 	if (!config) {
@@ -49,15 +67,15 @@ app.post("/send", async (req, res) => {
 			from: `"${name}" <${config.auth.user}>`,
 			to: config.auth.user,
 			replyTo: email,
-			subject: adminSubject,
+			subject: config.adminSubject,
 			html: adminTemplate,
 		});
 
 		// Send auto-reply to user
 		await transporter.sendMail({
-			from: `"${adminName}" <${config.auth.user}>`,
+			from: `"${config.fromName}" <${config.auth.user}>`,
 			to: email,
-			subject: userSubject,
+			subject: config.userSubject,
 			html: userTemplate,
 		});
 
