@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import nodemailer from "nodemailer";
-import { readFile } from "node:fs/promises"; // ✅ Biome-approved
+import { readFile } from "node:fs/promises";
 import emailServices from "./config.js";
 import dotenv from "dotenv";
 
