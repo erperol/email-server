@@ -9,13 +9,7 @@ dotenv.config();
 
 const app = express();
 
-app.use(
-   cors({
-      origin: "https://www.erperol.com",
-      methods: ["POST", "GET", "OPTIONS"],
-      allowedHeaders: ["Content-Type"],
-   }),
-);
+app.use(cors());
 
 app.use(express.json());
 
